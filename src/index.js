@@ -18,10 +18,19 @@ async function renderHtmlFileTemplate(path, data, state) {
   const { view } = await import(path);
   const rendered = view(data, state);
   let html = '';
-  for (const chunk of rendered) {
+  for (let chunk of rendered) {
     html += chunk;
   }
-  return html;
+
+  return data.settings['view minify']===true ? html
+                                                .replace(/<!--[\s\S]*?-->/g,'')         //html comments
+                                                .replace( /\/\*[\s\S]*?\*\//g, '')      //css comments
+                                                .replace( /[^:\/]\/\/.*/g, '')          //js comments
+                                                .replace(/(?<!<pre>|\`)>(\s*)</g, '><') // once line code
+                                                .replace(/[\n\r]/g, '')                 // remove multi lines
+                                                .replace(/<(\w+)([^>]*)="([^"\s]+)"([^>]*)>/g, '<$1$2=$3$4>')  // clean html attr 
+                                                : html
+
 }
 
 /**
@@ -62,7 +71,7 @@ export function html(strings, ...data) {
     const exp = data[i] || '';
     rawHtml += str + exp;
   }
-  const html = rawHtml.replace(/[\n\r]/g, '');
+  const html = rawHtml;
   return html;
 }
 
